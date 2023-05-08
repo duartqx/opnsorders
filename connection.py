@@ -1,15 +1,15 @@
 import sqlite3
 
 
-class __Connection:
+class __SQLiteConnection:
     def __init__(self, db: str = "oohpns") -> None:
         self.db = db
-        self._conn = sqlite3.connect(self.db)
-        self._conn.row_factory = sqlite3.Row
-        self.cursor = self._conn.cursor()
+        self.conn = sqlite3.connect(self.db)
+        self.conn.row_factory = sqlite3.Row
+        self.cursor = self.conn.cursor()
 
     def close(self) -> None:
-        self._conn.close()
+        self.conn.close()
 
     def initialize_db(self) -> None:
         self.cursor.execute(
@@ -39,20 +39,20 @@ class __Connection:
         )
 
 
-class __ConnectionManager:
+class __SQLiteConnectionManager:
     def __init__(self) -> None:
-        self.__C = __Connection()
+        self.__C: __SQLiteConnection = __SQLiteConnection()
 
     @property
-    def C(self) -> __Connection:
+    def C(self) -> __SQLiteConnection:
         return self.__C
 
     def __setattr__(self, __name: str, __value: Any) -> None:  # type: ignore
         raise AttributeError("Not allowed")
 
 
-__CONNECTION_MANAGER = __ConnectionManager()
+__CONNECTION_MANAGER = __SQLiteConnectionManager()
 
 
-def get_connection() -> __Connection:
+def get_connection() -> __SQLiteConnection:
     return __CONNECTION_MANAGER.C

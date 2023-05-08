@@ -28,7 +28,9 @@ class Manager:
         OP: str = "AND",
         **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
     ) -> Set[Model]:
+
         keys: List[str] = list(self.model.__annotations__.keys())
+
         counter = 0
 
         class_name: str = self.model.__name__  # type: ignore
