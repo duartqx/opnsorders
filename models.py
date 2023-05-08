@@ -1,74 +1,32 @@
-import sqlite3
 from dataclasses import dataclass
 from datetime import date as Date
-from enums import Background, Type
-from functools import cached_property
-from typing import Any, Dict, List
-
-
-class Connection:
-    def __init__(self, db: str = "oohpns") -> None:
-        self.db = db
-        self._conn = sqlite3.connect(self.db)
-        self.cursor = self._conn.cursor()
-
-    def close(self) -> None:
-        self._conn.close()
-
-    def initialize_db(self) -> None:
-        self.cursor.execute(
-            """
-                CREATE TABLE IF NOT EXISTS Order
-                (
-                    _id INTEGER NOT NULL PRIMARY KEY,
-                    date DATE NOT NULL,
-                    total INTEGER NOT NULL,
-                );
-
-                CREATE TABLE IF NOT EXISTS OrderItem
-                (
-                    _id INTEGER NOT NULL PRIMARY KEY,
-                    order_id INTEGER NOT NULL,
-                    price INTEGER NOT NULL,
-                    persons_nb INTEGER NOT NULL DEFAULT 0,
-                    kids_pets_nb INTEGER NOT NULL DEFAULT 0,
-                    type INTEGER NOT NULL,
-                    background INTEGER NOT NULL,
-                    details TEXT,
-                    FOREIGN KEY (order_id) REFERENCES Order(_id),
-                );
-            """
-        )
-        pass
-
-
-C = Connection()
+from enums import Background, BodyType
+from managers import Model
 
 
 @dataclass
-class Order:
+class Order(Model):
     _id: int
     date: Date
     total: int
+    paid: bool
 
-    # @classmethod
-    # def get(cls, **kwargs: Dict[str, Any]) -> List[cls]:
-    #    pass
-
-    # def get_order_item_set(self) -> List[OrderItem]:
-    #    return Order.get_set(order_id=self._id)
+    # @cached_property
+    # def order_item_set(self) -> Set[OrderItem]:
+    #     return getattr(self, "__order_item_set", None)
 
 
 @dataclass
-class OrderItem:
+class OrderItem(Model):
     _id: int
     order_id: int
     price: int
     persons_nb: int
     kids_pets_nb: int
-    type: Type
+    type: BodyType
     background: Background
     details: str
+    done: bool
 
     # @cached_property
     # def order(self) -> Order:

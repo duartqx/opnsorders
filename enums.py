@@ -1,13 +1,14 @@
 from enum import Enum
 from functools import cached_property
 
+
 class EnumDisplay(Enum):
     @cached_property
     def display(self) -> str:
         return self.name.replace("_", " ").capitalize()
 
 
-class Type(EnumDisplay):
+class BodyType(EnumDisplay):
     FULL_BODY = 1
     HALF_BODY = 2
 
@@ -27,4 +28,3 @@ class Background(EnumDisplay):
     SCHOOL = 12
     SKY = 13
     VALENTINE = 14
-
