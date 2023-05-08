@@ -21,10 +21,10 @@ class Background(EnumDisplay):
     COUCH_NOEL = 5
     COUCH_VALENTINE = 6
     CUSTOM = 7
-    EASTER_HOUSE = 8
-    FACTORY = 9
-    HALLOWER_HOUSE = 10
-    HOUSE = 11
+    FACTORY = 8
+    HOUSE = 9
+    HOUSE_EASTER = 10
+    HOUSE_HALLOWEEN = 11
     SCHOOL = 12
     SKY = 13
     VALENTINE = 14
