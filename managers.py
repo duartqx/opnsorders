@@ -33,15 +33,18 @@ class Manager:
 
         counter = 0
 
-        class_name: str = self.model.__name__  # type: ignore
+        class_name: str = str(self.model.__name__)
         query: str = "SELECT * FROM %s WHERE"
-        params: tuple[str] = (class_name,)  # type: ignore
+        params: tuple[str, ...] = (class_name,)
 
         for attr, value in kwargs.items():
             if attr not in keys:
                 raise AttributeError(
-                    f"{class_name} does not have {attr} attribute!"  # type: ignore
+                    f"{class_name} does not have {attr} attribute!"
                 )
+
+            if counter > 0:
+                query += f" {OP}"
 
             if isinstance(value, (list, tuple)):
                 eq_or_in = "IN"
@@ -49,14 +52,11 @@ class Manager:
                 eq_or_in = "="
 
             query += f" %s {eq_or_in} %s"
-            params += (attr, value)  # type: ignore
-
-            if counter > 0:
-                query += f" {OP}"
+            params += (str(attr), str(value))
 
             counter += 1
 
         return set(
-            self.model(**dict(row))  # type: ignore
-            for row in __C.cursor.execute(query, params).fetchall()  # type: ignore
+            self.model(**dict(row))
+            for row in __C.cursor.execute(query, params).fetchall()
         )

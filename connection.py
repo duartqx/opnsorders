@@ -1,7 +1,8 @@
 import sqlite3
+from typing import Any
 
 
-class __SQLiteConnection:
+class _SQLiteConnection:
     def __init__(self, db: str = "oohpns") -> None:
         self.db = db
         self.conn = sqlite3.connect(self.db)
@@ -41,18 +42,20 @@ class __SQLiteConnection:
 
 class __SQLiteConnectionManager:
     def __init__(self) -> None:
-        self.__C: __SQLiteConnection = __SQLiteConnection()
+        self.__C: _SQLiteConnection = _SQLiteConnection()
 
     @property
-    def C(self) -> __SQLiteConnection:
+    def C(self) -> _SQLiteConnection:
         return self.__C
 
-    def __setattr__(self, __name: str, __value: Any) -> None:  # type: ignore
-        raise AttributeError("Not allowed")
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        if hasattr(self, "_SQLiteConnectionManager__C"):
+            raise AttributeError("Not allowed")
+        return super().__setattr__(__name, __value)
 
 
 __CONNECTION_MANAGER = __SQLiteConnectionManager()
 
 
-def get_connection() -> __SQLiteConnection:
+def get_connection() -> _SQLiteConnection:
     return __CONNECTION_MANAGER.C
