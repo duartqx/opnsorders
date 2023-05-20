@@ -5,7 +5,7 @@ from functools import cached_property
 class EnumDisplay(Enum):
     @cached_property
     def display(self) -> str:
-        return self.name.replace("_", " ").capitalize()
+        return " ".join(w.capitalize() for w in self.name.split("_"))
 
 
 class BodyType(EnumDisplay):
