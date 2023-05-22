@@ -50,7 +50,7 @@ class Model:
     ) -> Type["Model"]:
         keys: List[str] = list(cls.__annotations__.keys())
 
-        query: str = f"SELECT * FROM {cls.__name__} WHERE"
+        query_str: str = f"SELECT * FROM {cls.__name__} WHERE"
         values: Tuple[str, ...] = tuple()
         counter = 0
 
@@ -61,31 +61,30 @@ class Model:
                 )
 
             if counter > 0:
-                query += OP
+                query_str += OP
 
             if isinstance(value, bool):
                 value = int(value)
 
             if isinstance(value, (list, tuple)):
-                query += f" {attr} IN ({','.join('?' * len(value))}) "
+                query_str += f" {attr} IN ({','.join('?' * len(value))}) "
                 values += tuple(value)
             else:
-                query += f" {attr} = ? "
+                query_str += f" {attr} = ? "
                 values += (str(value),)
 
             counter += 1
 
-        query += ";"
-        cls.query = __C.cursor.execute(query, values)
+        query_str += ";"
+
+        cls.query = __C.cursor.execute(query_str, values)
+
         return cls
 
     @classmethod
     def all(cls: Type["Model"]) -> Set["Model"]:
         if getattr(cls, "query", None) is not None:
-            return set(
-                cls(**dict(row))
-                for row in cls.query.fetchall()
-            )
+            return set(cls(**dict(row)) for row in cls.query.fetchall())
         raise ValueError("Missing query!")
 
     @classmethod
