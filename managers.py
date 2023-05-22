@@ -18,13 +18,13 @@ class Model:
                 setattr(self, f, bool(getattr(self, f)))
 
     def create(self):
-        columns: Tuple[str] = tuple(
+        columns: Tuple[str, ...] = tuple(
             filter(
                 lambda x: getattr(self, x) is not None,
                 self.__annotations__.keys(),
             )
         )
-        values: Tuple[str] = tuple()
+        values: Tuple[str, ...] = tuple()
         for column in columns:
             value = getattr(self, column)
             if isinstance(value, bool):
