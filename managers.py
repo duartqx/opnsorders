@@ -82,7 +82,7 @@ class Model:
         return query, values
 
     @classmethod
-    def get(
+    def filter(
         cls: Type["Model"],
         OP: str = "AND",
         **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
@@ -96,7 +96,7 @@ class Model:
         )
 
     @classmethod
-    def first(
+    def get(
         cls: Type["Model"],
         OP: str = "AND",
         **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
