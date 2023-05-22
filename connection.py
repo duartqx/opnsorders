@@ -13,11 +13,13 @@ class _SQLiteConnection:
         self.conn.close()
 
     def initialize_db(self) -> None:
+        # TODO: Remove from here and dynamically build the CREATE TABLE sql with
+        # annotation on models fields types
         self.cursor.execute(
             """
                 CREATE TABLE IF NOT EXISTS Order
                 (
-                    _id INTEGER NOT NULL PRIMARY KEY,
+                    id INTEGER NOT NULL PRIMARY KEY,
                     date DATE NOT NULL,
                     total INTEGER NOT NULL,
                     paid BOOL NOT NULL DEFAULT 0
@@ -25,8 +27,9 @@ class _SQLiteConnection:
 
                 CREATE TABLE IF NOT EXISTS OrderItem
                 (
-                    _id INTEGER NOT NULL PRIMARY KEY,
+                    id INTEGER NOT NULL PRIMARY KEY,
                     order_id INTEGER NOT NULL,
+                    details TEXT NOT NULL,
                     price INTEGER NOT NULL,
                     persons_nb INTEGER NOT NULL DEFAULT 0,
                     kids_pets_nb INTEGER NOT NULL DEFAULT 0,
@@ -34,7 +37,7 @@ class _SQLiteConnection:
                     background INTEGER NOT NULL,
                     details TEXT,
                     done BOOL NOT NULL DEFAULT 0,
-                    FOREIGN KEY (order_id) REFERENCES Order(_id)
+                    FOREIGN KEY (order_id) REFERENCES Order(id)
                 );
             """
         )

@@ -8,20 +8,21 @@ from typing import Set
 
 @dataclass
 class Order(Model):
-    _id: int
+    id: int
     date: Date
     total: int
     paid: bool
 
     @cached_property
     def order_item_set(self) -> Set["Model"]:
-        return OrderItem.get(**{"order_id": int(self._id)}).all()
+        return OrderItem.get(**{"order_id": int(self.id)}).all()
 
 
 @dataclass
 class OrderItem(Model):
-    _id: int
+    id: int
     order_id: int
+    ref: str
     price: int
     persons_nb: int
     kids_pets_nb: int
@@ -32,4 +33,4 @@ class OrderItem(Model):
 
     @cached_property
     def order(self) -> "Model":
-        return Order.get(**{"_id": int(self.order_id)}).first()
+        return Order.get(**{"id": int(self.order_id)}).first()

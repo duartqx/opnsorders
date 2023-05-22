@@ -2,18 +2,18 @@ from enum import Enum
 from functools import cached_property
 
 
-class EnumDisplay(Enum):
+class DisplayEnum(Enum):
     @cached_property
     def display(self) -> str:
         return " ".join(w.capitalize() for w in self.name.split("_"))
 
 
-class BodyType(EnumDisplay):
+class BodyType(DisplayEnum):
     FULL_BODY = 1
     HALF_BODY = 2
 
 
-class Background(EnumDisplay):
+class Background(DisplayEnum):
     BEACH = 1
     CHURCH = 2
     COUCH = 3

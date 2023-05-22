@@ -9,7 +9,7 @@ __C = get_connection()
 @dataclass
 class Model:
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}: {getattr(self, '_id')}"
+        return f"{self.__class__.__name__}: {getattr(self, 'id')}"
 
     def __post_init__(self) -> None:
         for f, t in self.__annotations__.items():
@@ -39,7 +39,8 @@ class Model:
             values,
         )
         __C.conn.commit()
-        self._id = __C.cursor.lastrowid
+        if self.id is None:
+            self.id = __C.cursor.lastrowid
         return self
 
     @classmethod
