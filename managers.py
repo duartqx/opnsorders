@@ -1,62 +1,115 @@
-from typing import Dict, Iterable, Set, List, Union, Type
 from connection import get_connection
+from dataclasses import dataclass
+from typing import Dict, Iterable, Set, List, Union, Type, Tuple
 
 
 __C = get_connection()
 
 
+@dataclass
 class Model:
-    __objects = None
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}: {getattr(self, '_id')}"
+
+    def __post_init__(self) -> None:
+        for f, t in self.__annotations__.items():
+            if t == bool and isinstance(getattr(self, f), int):
+                # If field is bool makes the convertion from int to bool
+                setattr(self, f, bool(getattr(self, f)))
+
+    def create(self):
+        columns: Tuple[str] = tuple(
+            filter(
+                lambda x: getattr(self, x) is not None,
+                self.__annotations__.keys(),
+            )
+        )
+        values: Tuple[str] = tuple()
+        for column in columns:
+            value = getattr(self, column)
+            if isinstance(value, bool):
+                value = int(value)
+            values += (str(value),)
+
+        __C.cursor.execute(
+            f"""
+                INSERT INTO {self.__class__.__name__}
+                {columns} VALUES ({', '.join('?' * len(values))})
+            """,
+            values,
+        )
+        __C.conn.commit()
+        self._id = __C.cursor.lastrowid
+        return self
 
     @classmethod
-    @property
-    def objects(cls):
-        if cls.__objects is None:
-            cls.__objects = Manager(cls)
-        return cls.__objects
-
-
-class Manager:
-    def __init__(self, model: Type[Model]) -> None:
-        self.model = model
-
-    def __str__(self) -> str:
-        return f"{self.__class__.__name__}: {self.model.__name__}"  # type: ignore
-
-    def get(
-        self,
-        OP: str = "AND",
+    def __get_query_and_values(
+        cls: Type["Model"],
+        OP: str,
+        allow_iter: bool = True,
         **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
-    ) -> Set[Model]:
+    ) -> Tuple[str, Tuple[str, ...]]:
+        keys: List[str] = list(cls.__annotations__.keys())
 
-        keys: List[str] = list(self.model.__annotations__.keys())
-
+        query: str = f"SELECT * FROM {cls.__name__} WHERE"
+        values: Tuple[str, ...] = tuple()
         counter = 0
-
-        class_name: str = str(self.model.__name__)
-        query: str = "SELECT * FROM %s WHERE"
-        params: tuple[str, ...] = (class_name,)
 
         for attr, value in kwargs.items():
             if attr not in keys:
                 raise AttributeError(
-                    f"{class_name} does not have {attr} attribute!"
+                    f"{cls.__name__} does not have {attr} attribute!"
                 )
 
             if counter > 0:
-                query += f" {OP}"
+                query += OP
+
+            if isinstance(value, bool):
+                value = int(value)
 
             if isinstance(value, (list, tuple)):
-                eq_or_in = "IN"
+                if not allow_iter:
+                    raise ValueError("Many is not supported")
+                query += f" {attr} IN ({','.join('?' * len(value))}) "
+                values += tuple(value)
             else:
-                eq_or_in = "="
-
-            query += f" %s {eq_or_in} %s"
-            params += (str(attr), str(value))
+                query += f" {attr} = ? "
+                values += (str(value),)
 
             counter += 1
 
+        query += ";"
+        return query, values
+
+    @classmethod
+    def get(
+        cls: Type["Model"],
+        OP: str = "AND",
+        **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
+    ) -> Set["Model"]:
+
+        query, values = cls.__get_query_and_values(OP=OP, **kwargs)
+
         return set(
-            self.model(**dict(row))
-            for row in __C.cursor.execute(query, params).fetchall()
+            cls(**dict(row))
+            for row in __C.cursor.execute(query, values).fetchall()
         )
+
+    @classmethod
+    def first(
+        cls: Type["Model"],
+        OP: str = "AND",
+        **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
+    ) -> "Model":
+        query, values = cls.__get_query_and_values(
+            OP=OP, allow_iter=False, **kwargs
+        )
+        return cls(**dict(__C.cursor.execute(query, values).fetchone()))
+
+    @classmethod
+    def update(cls: Type["Model"]):
+        pass
+
+    @classmethod
+    def delete(cls: Type["Model"]):
+        pass

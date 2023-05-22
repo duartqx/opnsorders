@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 from datetime import date as Date
 from enums import Background, BodyType
+from functools import cached_property
 from managers import Model
+from typing import Set
 
 
 @dataclass
@@ -11,9 +13,9 @@ class Order(Model):
     total: int
     paid: bool
 
-    # @cached_property
-    # def order_item_set(self) -> Set[OrderItem]:
-    #     return getattr(self, "__order_item_set", None)
+    @cached_property
+    def order_item_set(self) -> Set["Model"]:
+        return OrderItem.get(**{"order_id": int(self._id)})
 
 
 @dataclass
@@ -28,10 +30,6 @@ class OrderItem(Model):
     details: str
     done: bool
 
-    # @cached_property
-    # def order(self) -> Order:
-    #    return Order.get(_id=self.order_id)
-
-    # @classmethod
-    # def get(cls, **kwargs: Dict[str, Any]) -> List[cls]:
-    #    return
+    @cached_property
+    def order(self) -> "Model":
+        return Order.first(**{"_id": self.order_id})
