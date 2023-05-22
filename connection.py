@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Any
+from typing import Any, Callable, Union
 
 
 class _SQLiteConnection:
@@ -10,7 +10,22 @@ class _SQLiteConnection:
         self.cursor = self.conn.cursor()
 
     def close(self) -> None:
-        self.conn.close()
+        return self.conn.close()
+
+    def commit(self) -> None:
+        return self.conn.commit()
+
+    @property
+    def execute(self) -> Callable[..., sqlite3.Cursor]:
+        return self.cursor.execute
+
+    @property
+    def lastrowid(self) -> Union[int, None]:
+        return self.cursor.lastrowid
+
+    @property
+    def rowcount(self) -> int:
+        return self.cursor.rowcount
 
     def initialize_db(self) -> None:
         # TODO: Remove from here and dynamically build the CREATE TABLE sql with

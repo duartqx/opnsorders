@@ -31,16 +31,16 @@ class Model:
                 value = int(value)
             values += (str(value),)
 
-        __C.cursor.execute(
+        __C.execute(
             f"""
                 INSERT INTO {self.__class__.__name__}
                 {columns} VALUES ({', '.join('?' * len(values))})
             """,
             values,
         )
-        __C.conn.commit()
+        __C.commit()
         if self.id is None:
-            self.id = __C.cursor.lastrowid
+            self.id = __C.lastrowid
         return self
 
     @classmethod
@@ -91,7 +91,7 @@ class Model:
 
     @classmethod
     def _select(cls):
-        return __C.cursor.execute(
+        return __C.execute(
             f"{cls.query['select']} {cls.query['where']};", cls.query["values"]
         )
 
@@ -139,14 +139,14 @@ class Model:
         if update_str.endswith(","):
             update_str = update_str.rstrip(",")
 
-        update_str += f" {cls.query['where']}"
+        update_str += f" {cls.query['where']};"
 
         values += tuple(cls.query["values"])
 
-        __C.cursor.execute(update_str, values)
-        __C.conn.commit()
+        __C.execute(update_str, values)
+        __C.commit()
 
-        return __C.cursor.rowcount
+        return __C.rowcount
 
     @classmethod
     def delete(cls: Type["Model"]):
