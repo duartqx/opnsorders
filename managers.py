@@ -1,6 +1,6 @@
 from connection import get_connection
 from dataclasses import dataclass
-from typing import Dict, Iterable, Set, List, Union, Type, Tuple
+from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 
 
 __C = get_connection()
@@ -44,59 +44,110 @@ class Model:
         return self
 
     @classmethod
-    def get(
+    def filter(
         cls: Type["Model"],
         OP: str = "AND",
         **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
     ) -> Type["Model"]:
-        keys: List[str] = list(cls.__annotations__.keys())
 
-        query_str: str = f"SELECT * FROM {cls.__name__} WHERE"
+        keys: List[str] = list(cls.__annotations__.keys())
+        where: str = "WHERE"
         values: Tuple[str, ...] = tuple()
+        columns: Tuple[str, ...] = tuple()
         counter = 0
 
         for attr, value in kwargs.items():
+
             if attr not in keys:
                 raise AttributeError(
                     f"{cls.__name__} does not have {attr} attribute!"
                 )
 
+            columns += (attr,)
+
             if counter > 0:
-                query_str += OP
+                where += OP
 
             if isinstance(value, bool):
                 value = int(value)
 
             if isinstance(value, (list, tuple)):
-                query_str += f" {attr} IN ({','.join('?' * len(value))}) "
+                where += f" {attr} IN ({','.join('?' * len(value))}) "
                 values += tuple(value)
             else:
-                query_str += f" {attr} = ? "
+                where += f" {attr} = ? "
                 values += (str(value),)
 
             counter += 1
 
-        query_str += ";"
-
-        cls.query = __C.cursor.execute(query_str, values)
+        cls.query = {
+            "select": f"SELECT * FROM {cls.__name__} ",
+            "where": where,
+            "values": values,
+            "columns": columns,
+        }
 
         return cls
 
     @classmethod
+    def _select(cls):
+        return __C.cursor.execute(
+            f"{cls.query['select']} {cls.query['where']};", cls.query["values"]
+        )
+
+    @classmethod
     def all(cls: Type["Model"]) -> Set["Model"]:
         if getattr(cls, "query", None) is not None:
-            return set(cls(**dict(row)) for row in cls.query.fetchall())
+            return set(cls(**dict(row)) for row in cls._select().fetchall())
         raise ValueError("Missing query!")
 
     @classmethod
     def first(cls: Type["Model"]) -> "Model":
         if getattr(cls, "query", None) is not None:
-            return cls(**dict(cls.query.fetchone()))
+            return cls(**dict(cls._select().fetchone()))
         raise ValueError("Missing query!")
 
     @classmethod
-    def update(cls: Type["Model"]):
-        pass
+    def update(
+        cls: Type["Model"],
+        OP: str = "AND",
+        **kwargs: Dict[str, Union[str, int, bool]],
+    ) -> int:
+
+        if getattr(cls, "query", None) is None:
+            raise ValueError("Missing query!")
+        elif not kwargs:
+            raise ValueError("No attribute passed to be updated!")
+
+        keys: List[str] = list(cls.__annotations__.keys())
+        update_str: str = f"UPDATE {cls.__name__} SET "
+        values: Tuple[str, ...] = tuple()
+
+        for attr, value in kwargs.items():
+
+            if attr not in keys:
+                raise AttributeError(
+                    f"{cls.__name__} does not have {attr} attribute!"
+                )
+
+            if isinstance(value, bool):
+                value = int(value)
+
+            update_str += f" {attr} = ?,"
+
+            values += (str(value),)
+
+        if update_str.endswith(","):
+            update_str = update_str.rstrip(",")
+
+        update_str += f" {cls.query['where']}"
+
+        values += tuple(cls.query["values"])
+
+        __C.cursor.execute(update_str, values)
+        __C.conn.commit()
+
+        return __C.cursor.rowcount
 
     @classmethod
     def delete(cls: Type["Model"]):

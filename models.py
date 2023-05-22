@@ -15,7 +15,7 @@ class Order(Model):
 
     @cached_property
     def order_item_set(self) -> Set["Model"]:
-        return OrderItem.get(**{"order_id": int(self.id)}).all()
+        return OrderItem.filter(**{"order_id": int(self.id)}).all()
 
 
 @dataclass
@@ -33,4 +33,4 @@ class OrderItem(Model):
 
     @cached_property
     def order(self) -> "Model":
-        return Order.get(**{"id": int(self.order_id)}).first()
+        return Order.filter(**{"id": int(self.order_id)}).first()
