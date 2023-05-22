@@ -110,7 +110,6 @@ class Model:
     @classmethod
     def update(
         cls: Type["Model"],
-        OP: str = "AND",
         **kwargs: Dict[str, Union[str, int, bool]],
     ) -> int:
 
