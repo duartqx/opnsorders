@@ -43,12 +43,11 @@ class Model:
         return self
 
     @classmethod
-    def __get_query_and_values(
+    def get(
         cls: Type["Model"],
-        OP: str,
-        allow_iter: bool = True,
+        OP: str = "AND",
         **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
-    ) -> Tuple[str, Tuple[str, ...]]:
+    ) -> Type["Model"]:
         keys: List[str] = list(cls.__annotations__.keys())
 
         query: str = f"SELECT * FROM {cls.__name__} WHERE"
@@ -68,8 +67,6 @@ class Model:
                 value = int(value)
 
             if isinstance(value, (list, tuple)):
-                if not allow_iter:
-                    raise ValueError("Many is not supported")
                 query += f" {attr} IN ({','.join('?' * len(value))}) "
                 values += tuple(value)
             else:
@@ -79,32 +76,23 @@ class Model:
             counter += 1
 
         query += ";"
-        return query, values
+        cls.query = __C.cursor.execute(query, values)
+        return cls
 
     @classmethod
-    def filter(
-        cls: Type["Model"],
-        OP: str = "AND",
-        **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
-    ) -> Set["Model"]:
-
-        query, values = cls.__get_query_and_values(OP=OP, **kwargs)
-
-        return set(
-            cls(**dict(row))
-            for row in __C.cursor.execute(query, values).fetchall()
-        )
+    def all(cls: Type["Model"]) -> Set["Model"]:
+        if getattr(cls, "query", None) is not None:
+            return set(
+                cls(**dict(row))
+                for row in cls.query.fetchall()
+            )
+        raise ValueError("Missing query!")
 
     @classmethod
-    def get(
-        cls: Type["Model"],
-        OP: str = "AND",
-        **kwargs: Dict[str, Union[str, int, Iterable[Union[str, int]]]],
-    ) -> "Model":
-        query, values = cls.__get_query_and_values(
-            OP=OP, allow_iter=False, **kwargs
-        )
-        return cls(**dict(__C.cursor.execute(query, values).fetchone()))
+    def first(cls: Type["Model"]) -> "Model":
+        if getattr(cls, "query", None) is not None:
+            return cls(**dict(cls.query.fetchone()))
+        raise ValueError("Missing query!")
 
     @classmethod
     def update(cls: Type["Model"]):
