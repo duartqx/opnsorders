@@ -1,5 +1,5 @@
 from connection import get_connection
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 
 
@@ -8,10 +8,17 @@ __C = get_connection()
 
 @dataclass
 class Model:
+
+    id: Union[int, None] = field(init=False, default=None)
+
     def __str__(self) -> str:
         return f"{self.__class__.__name__}: {getattr(self, 'id')}"
 
     def __post_init__(self) -> None:
+
+        # Sets the delete method after instantiating
+        self.delete = self.__instance__delete
+
         for f, t in self.__annotations__.items():
             if t == bool and isinstance(getattr(self, f), int):
                 # If field is bool makes the convertion from int to bool
@@ -51,7 +58,7 @@ class Model:
     ) -> Type["Model"]:
 
         keys: List[str] = list(cls.__annotations__.keys())
-        where: str = "WHERE"
+        where: str = ""
         values: Tuple[str, ...] = tuple()
         columns: Tuple[str, ...] = tuple()
         counter = 0
@@ -81,7 +88,6 @@ class Model:
             counter += 1
 
         cls.query = {
-            "select": f"SELECT * FROM {cls.__name__} ",
             "where": where,
             "values": values,
             "columns": columns,
@@ -92,19 +98,39 @@ class Model:
     @classmethod
     def _select(cls):
         return __C.execute(
-            f"{cls.query['select']} {cls.query['where']};", cls.query["values"]
+            f"SELECT * FROM {cls.__name__} WHERE {cls.query['where']};",
+            cls.query["values"],
         )
+
+    @classmethod
+    def __instantitate_row(
+        cls, dict_row: Dict[str, Union[str, int]]
+    ) -> "Model":
+
+        # Grabs the id
+        _id: int = dict_row.pop("id")  # type: ignore
+
+        # Instantiate with all the other values but not id
+        instance = cls(**dict_row)
+
+        # Sets the id with the private method
+        instance.id = _id
+
+        return instance
 
     @classmethod
     def all(cls: Type["Model"]) -> Set["Model"]:
         if getattr(cls, "query", None) is not None:
-            return set(cls(**dict(row)) for row in cls._select().fetchall())
+            return set(
+                cls.__instantitate_row(dict(row))
+                for row in cls._select().fetchall()
+            )
         raise ValueError("Missing query!")
 
     @classmethod
     def first(cls: Type["Model"]) -> "Model":
         if getattr(cls, "query", None) is not None:
-            return cls(**dict(cls._select().fetchone()))
+            return cls.__instantitate_row(dict(cls._select().fetchone()))
         raise ValueError("Missing query!")
 
     @classmethod
@@ -149,5 +175,26 @@ class Model:
         return __C.rowcount
 
     @classmethod
+    def get(
+        cls: Type["Model"],
+        **kwargs: Dict[str, Union[str, int, bool]],
+    ):
+        for v in kwargs.values():
+            if not isinstance(v, (str, int, bool)):
+                raise ValueError("Get method can't return more than one")
+        return cls.filter(**kwargs).first()
+
+    @classmethod
     def delete(cls: Type["Model"]):
-        pass
+        if getattr(cls, "query", None) is None:
+            raise ValueError("Missing query!")
+        __C.execute(f"DELETE FROM {cls.__name__} WHERE {cls.query['where']};")
+        __C.commit()
+
+    def __instance__delete(self: "Model"):
+        if self.id is None:
+            raise ValueError("Cannot delete unsaved instances!")
+        __C.execute(
+            f"DELETE FROM {self.__class__.__name__} WHERE id = {self.id};"
+        )
+        __C.commit()
