@@ -145,7 +145,7 @@ class Model:
             raise ValueError("No attribute passed to be updated!")
 
         keys: List[str] = list(cls.__annotations__.keys())
-        update_str: str = f"UPDATE {cls.__name__} SET "
+        update_str: str = ""
         values: Tuple[str, ...] = tuple()
 
         for attr, value in kwargs.items():
@@ -165,11 +165,12 @@ class Model:
         if update_str.endswith(","):
             update_str = update_str.rstrip(",")
 
-        update_str += f" {cls.query['where']};"
-
         values += tuple(cls.query["values"])
 
-        __C.execute(update_str, values)
+        __C.execute(
+            f"UPDATE {cls.__name__} SET {update_str} WHERE {cls.query['where']};",
+            values,
+        )
         __C.commit()
 
         return __C.rowcount
