@@ -13,7 +13,7 @@ class BodyType(DisplayEnum):
     HALF_BODY = 2
 
 
-class Background(DisplayEnum):
+class BackgroundType(DisplayEnum):
     BEACH = 1
     CHURCH = 2
     COUCH = 3
