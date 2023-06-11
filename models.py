@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date as Date
-from enums import Background, BodyType
+from enums import BackgroundType, BodyType
 from functools import cached_property
 from managers import Model
 from typing import Set
@@ -8,26 +8,26 @@ from typing import Set
 
 @dataclass
 class Order(Model):
-    id: int
     date: Date
     total: int
     paid: bool
 
     @cached_property
     def order_item_set(self) -> Set["Model"]:
+        if self.id is None:
+            raise ValueError("Id is not set")
         return OrderItem.filter(**{"order_id": int(self.id)}).all()
 
 
 @dataclass
 class OrderItem(Model):
-    id: int
     order_id: int
     ref: str
     price: int
     persons_nb: int
     kids_pets_nb: int
     type: BodyType
-    background: Background
+    background: BackgroundType
     details: str
     done: bool
 
