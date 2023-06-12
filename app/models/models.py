@@ -1,8 +1,9 @@
+from ..enums import BackgroundType, BodyType
+from core.models.managers import Model
+
 from dataclasses import dataclass
 from datetime import date as Date
-from enums import BackgroundType, BodyType
 from functools import cached_property
-from managers import Model
 from typing import Set
 
 

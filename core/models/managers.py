@@ -1,4 +1,4 @@
-from connection import get_connection
+from .connection import get_connection
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Set, Tuple, Type, Union
 
