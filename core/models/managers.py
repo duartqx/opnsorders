@@ -19,10 +19,33 @@ class Model:
         # Sets the delete method after instantiating
         self.delete = self.__instance__delete
 
-        for f, t in self.__annotations__.items():
-            if t == bool and isinstance(getattr(self, f), int):
+        for field, field_type in self.__annotations__.items():
+            if field_type == bool and isinstance(getattr(self, field), int):
                 # If field is bool makes the convertion from int to bool
-                setattr(self, f, bool(getattr(self, f)))
+                setattr(self, field, bool(getattr(self, field)))
+
+    @classmethod
+    def _select(cls):
+        return __C.execute(
+            f"SELECT * FROM {cls.__name__} WHERE {cls.query['where']};",
+            cls.query["values"],
+        )
+
+    @classmethod
+    def __instantitate_row(
+        cls, dict_row: Dict[str, Union[str, int]]
+    ) -> "Model":
+
+        # Grabs the id
+        _id: int = dict_row.pop("id")  # type: ignore
+
+        # Instantiate with all the other values but not id
+        instance = cls(**dict_row)
+
+        # Sets the id with the private method
+        instance.id = _id
+
+        return instance
 
     def create(self):
         columns: Tuple[str, ...] = tuple(
@@ -96,29 +119,6 @@ class Model:
         return cls
 
     @classmethod
-    def _select(cls):
-        return __C.execute(
-            f"SELECT * FROM {cls.__name__} WHERE {cls.query['where']};",
-            cls.query["values"],
-        )
-
-    @classmethod
-    def __instantitate_row(
-        cls, dict_row: Dict[str, Union[str, int]]
-    ) -> "Model":
-
-        # Grabs the id
-        _id: int = dict_row.pop("id")  # type: ignore
-
-        # Instantiate with all the other values but not id
-        instance = cls(**dict_row)
-
-        # Sets the id with the private method
-        instance.id = _id
-
-        return instance
-
-    @classmethod
     def all(cls: Type["Model"]) -> Set["Model"]:
         if getattr(cls, "query", None) is not None:
             return set(
@@ -132,6 +132,16 @@ class Model:
         if getattr(cls, "query", None) is not None:
             return cls.__instantitate_row(dict(cls._select().fetchone()))
         raise ValueError("Missing query!")
+
+    @classmethod
+    def get(
+        cls: Type["Model"],
+        **kwargs: Dict[str, Union[str, int, bool]],
+    ):
+        for v in kwargs.values():
+            if not isinstance(v, (str, int, bool)):
+                raise ValueError(f"Values not allowed: {v}")
+        return cls.filter(**kwargs).first()
 
     @classmethod
     def update(
@@ -174,16 +184,6 @@ class Model:
         __C.commit()
 
         return __C.rowcount
-
-    @classmethod
-    def get(
-        cls: Type["Model"],
-        **kwargs: Dict[str, Union[str, int, bool]],
-    ):
-        for v in kwargs.values():
-            if not isinstance(v, (str, int, bool)):
-                raise ValueError("Get method can't return more than one")
-        return cls.filter(**kwargs).first()
 
     @classmethod
     def delete(cls: Type["Model"]):
