@@ -33,5 +33,5 @@ class OrderItem(Model):
     done: bool
 
     @cached_property
-    def order(self) -> "Model":
+    def order(self) -> "Model" | None:
         return Order.filter(**{"id": int(self.order_id)}).first()

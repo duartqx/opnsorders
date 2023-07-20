@@ -36,9 +36,9 @@ class Model:
         self.delete = self.__instance__delete
 
         for field, field_type in self.__annotations__.items():
-            if field_type == bool and isinstance(getattr(self, field), int):
+            if field_type == bool:
                 # If field is bool makes the convertion from int to bool
-                setattr(self, field, bool(getattr(self, field)))
+                setattr(self, field, bool(int(getattr(self, field))))
 
     @classmethod
     def _select(cls):
@@ -260,7 +260,7 @@ class Model:
         if self.id is None:
             raise ValueError("Cannot delete unsaved instances!")
         elif self.__class__.get(**{"id": self.id}) is None:
-            raise NotFoundError("Can't delete non existing instance!")
+            raise NotFoundError("Can't delete non existing row!")
 
         __C.execute(
             f"DELETE FROM {self.__class__.__name__} WHERE id = {self.id};"
