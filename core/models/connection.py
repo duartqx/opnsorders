@@ -32,7 +32,7 @@ class _SQLiteConnection:
         # annotation on models fields types
         self.cursor.execute(
             """
-                CREATE TABLE IF NOT EXISTS Order
+                CREATE TABLE IF NOT EXISTS OpnsOrder
                 (
                     id INTEGER NOT NULL PRIMARY KEY,
                     date DATE NOT NULL,
@@ -52,7 +52,7 @@ class _SQLiteConnection:
                     background INTEGER NOT NULL,
                     details TEXT,
                     done BOOL NOT NULL DEFAULT 0,
-                    FOREIGN KEY (order_id) REFERENCES Order(id)
+                    FOREIGN KEY (order_id) REFERENCES OpnsOrder(id)
                 );
             """
         )
